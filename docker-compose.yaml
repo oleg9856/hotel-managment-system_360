@@ -1,0 +1,67 @@
+services:
+  postgres:
+    container_name: postgres
+    image: postgres:17
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: root
+      POSTGRES_DB: sanchos_hotel_db
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    ports:
+      - "5434:5432"
+    networks:
+      - app-network
+    restart: unless-stopped
+
+  pgadmin:
+    container_name: pgadmin
+    image: dpage/pgadmin4
+    environment:
+      PGADMIN_DEFAULT_EMAIL: ${PGADMIN_DEFAULT_EMAIL:-pgadmin4@pgadmin.org}
+      PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_DEFAULT_PASSWORD:-admin}
+      PGADMIN_CONFIG_SERVER_MODE: 'False'
+    volumes:
+      - pgadmin-data:/var/lib/pgadmin
+    ports:
+      - "5050:80"
+    networks:
+      - app-network
+    restart: unless-stopped
+
+  frontend:
+    container_name: hotel-frontend
+    build:
+      context: ./frontend/hotel-frontend
+      dockerfile: Dockerfile
+    ports:
+      - "3000:3000"
+    networks:
+      - app-network
+    volumes:
+      - ./frontend/hotel-frontend:/app
+    stdin_open: true
+    tty: true
+
+  backend:
+    container_name: hotel-backend
+    build:
+      context: ./backend/hotel-sanchos
+      dockerfile: Dockerfile
+    ports:
+      - "8081:8081"
+    networks:
+      - app-network
+    depends_on:
+      - postgres
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/sanchos_hotel_db
+      SPRING_DATASOURCE_USERNAME: postgres
+      SPRING_DATASOURCE_PASSWORD: root
+
+volumes:
+  postgres-data:
+  pgadmin-data:
+
+networks:
+  app-network:
